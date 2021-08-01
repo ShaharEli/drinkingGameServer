@@ -27,9 +27,9 @@ const logErrorToService = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { password, phone } = req.body;
-  if (!password || !phone) createError("content missing", 400);
-  const user = await User.findOne({ phone });
+  const { password, email } = req.body;
+  if (!password || !email) createError("content missing", 400);
+  const user = await User.findOne({ email });
   if (!user) createError("error occurred", 500);
   const isPassOk = bcrypt.compareSync(password, user.password);
   if (!isPassOk) createError("One of the fields incorrect", 500); //TODO better response
@@ -54,18 +54,10 @@ const loginWithToken = async (req, res) => {
 const verifyMail = async () => {};
 
 const register = async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    phone,
-    avatar = null,
-    email,
-    password,
-  } = req.body;
+  const { firstName, lastName, avatar = null, email, password } = req.body;
   const payload = {
     firstName,
     lastName,
-    phone,
     avatar,
     email,
     password,
