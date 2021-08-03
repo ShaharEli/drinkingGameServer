@@ -72,7 +72,9 @@ const editUser = async (req, res) => {
     }
   });
   if (!Object.keys(payload).length) createError("data missing", 400);
-  const user = await User.findByIdAndUpdate(req.userId, payload).lean();
+  const user = await User.findByIdAndUpdate(req.userId, payload, {
+    new: true,
+  }).lean();
   if (!user) createError("error occurred", 400);
   delete user.password;
   res.json({ user });
