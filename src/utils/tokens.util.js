@@ -13,10 +13,11 @@ const verifyAccessToken = (token) =>
     return decoded;
   });
 
-const generateAccessToken = (id) =>
+const generateAccessToken = (id, userName) =>
   jwt.sign(
     {
       userId: id,
+      userName,
     },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: "15m" }
@@ -30,7 +31,7 @@ const verifyRefreshToken = (token) =>
     return decoded;
   });
 
-const generateRefreshToken = async (id) => {
+const generateRefreshToken = async (id, userName) => {
   try {
     const user = await User.findById(id);
     if (!user) throw new Error("user not found");
@@ -39,6 +40,7 @@ const generateRefreshToken = async (id) => {
     const token = jwt.sign(
       {
         userId: id,
+        userName,
       },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "1y" }

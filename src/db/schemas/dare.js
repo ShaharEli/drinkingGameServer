@@ -6,6 +6,13 @@ const dareDbSchema = new mongoose.Schema(
     text: { type: String, required: true, trim: true },
     img: { type: String },
     punishment: { type: String, required: true, trim: true },
+    language: {
+      type: String,
+      required: true,
+      default: "en",
+      trim: true,
+      enum: ["en", "he"],
+    },
   },
   { timestamps: true }
 );

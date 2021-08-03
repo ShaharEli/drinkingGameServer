@@ -34,43 +34,81 @@ const login = async (req, res) => {
   const isPassOk = bcrypt.compareSync(password, user.password);
   if (!isPassOk) createError("One of the fields incorrect", 500); //TODO better response
   delete user.password;
-  const accessToken = generateAccessToken(user._id);
-  const refreshToken = await generateRefreshToken(user._id);
+  const accessToken = generateAccessToken(user._id, user.userName);
+  const refreshToken = await generateRefreshToken(user._id, user.userName);
   res.json({ accessToken, refreshToken, user });
 };
 
 const loginWithToken = async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) createError("token missing", 400);
-  const userId = verifyRefreshToken(refreshToken);
+  const { userId } = verifyRefreshToken(refreshToken);
   if (!userId) createError("invalid token", 400);
-  const user = await User.findById(userId.userId).lean();
+  const user = await User.findById(userId).lean();
   if (!user) createError("error occurred", 500);
   delete user.password;
-  const accessToken = generateAccessToken(userId);
+  const accessToken = generateAccessToken(userId, user.userName);
   res.json({ user, accessToken });
+};
+
+const editUser = async (req, res) => {
+  const {
+    firstName = null,
+    lastName = null,
+    language = null,
+    avatar = null,
+    userName = null,
+  } = req.body;
+  const payload = {
+    firstName,
+    lastName,
+    language,
+    avatar,
+    userName,
+  };
+  Object.keys(payload).map((key) => {
+    if (!payload[key]) {
+      delete payload[key];
+    }
+  });
+  if (!Object.keys(payload).length) createError("data missing", 400);
+  const user = await User.findByIdAndUpdate(req.userId, payload).lean();
+  if (!user) createError("error occurred", 400);
+  delete user.password;
+  res.json({ user });
 };
 
 const verifyMail = async () => {};
 
 const register = async (req, res) => {
-  const { firstName, lastName, avatar = null, email, password } = req.body;
+  const {
+    firstName,
+    lastName,
+    avatar = null,
+    email,
+    password,
+    language,
+  } = req.body;
   const payload = {
     firstName,
     lastName,
     avatar,
     email,
     password,
+    language,
   };
   if (!avatar) delete payload.avatar;
   try {
     await userValidationSchema.validateAsync(payload);
+    const isUserExists = await User.findOne({ email, isVerified: true });
+    if (isUserExists) createError("error occurred", 400);
     const passwordHash = bcrypt.hashSync(payload.password, 8);
     payload.password = passwordHash;
+    payload.userName = await generateUserName({ firstName, lastName });
     const newUser = new User(payload);
     const user = await newUser.save();
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = await generateRefreshToken(user._id);
+    const accessToken = generateAccessToken(user._id, newUser.userName);
+    const refreshToken = await generateRefreshToken(user._id, newUser.userName);
     delete user.password;
     // TODO send mail
     res.json({ user, accessToken, refreshToken });
@@ -80,12 +118,20 @@ const register = async (req, res) => {
   }
 };
 
+const checkIfUserNameIsValid = async (req, res) => {
+  const { userName } = req.body;
+  if (userName?.length < 6) return res.json({ ok: false });
+  const isUserExists = await User.findOne({ userName });
+  if (isUserExists) return res.json({ ok: false });
+  return res.json({ ok: true });
+};
+
 const getToken = async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) createError("token missing", 400);
-  const userId = verifyRefreshToken(refreshToken);
+  const { userId, userName } = verifyRefreshToken(refreshToken);
   if (!userId) createError("invalid token", 400);
-  const accessToken = generateAccessToken(userId);
+  const accessToken = generateAccessToken(userId, userName);
   res.json({ accessToken });
 };
 
@@ -96,4 +142,6 @@ module.exports = {
   getToken,
   loginWithToken,
   logErrorToService,
+  editUser,
+  checkIfUserNameIsValid,
 };

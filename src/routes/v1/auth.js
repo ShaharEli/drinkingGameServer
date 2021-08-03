@@ -7,10 +7,13 @@ const {
   verifyMail,
   loginWithToken,
   logErrorToService,
+  editUser,
+  checkIfUserNameIsValid,
 } = require("../../controllers/auth");
 
 require("dotenv").config();
 const rateLimit = require("express-rate-limit");
+const checkToken = require("../../middelwares/checkToken");
 
 const apiLimiter = rateLimit({
   windowMs: 30 * 1000, // 15 minutes
@@ -37,6 +40,14 @@ authRouter.post("/register", (req, res) => withTryCatch(req, res, register));
 
 authRouter.post("/verify-mail", (req, res) =>
   withTryCatch(req, res, verifyMail)
+);
+
+authRouter.put("/edit", checkToken, (req, res) =>
+  withTryCatch(req, res, editUser)
+);
+
+authRouter.post("/check-username", checkToken, (req, res) =>
+  withTryCatch(req, res, checkIfUserNameIsValid)
 );
 
 module.exports = authRouter;

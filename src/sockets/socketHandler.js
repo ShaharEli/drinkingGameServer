@@ -7,7 +7,7 @@ const socketHandler = (io) => {
     const isAuthenticated = verifyAccessToken(socket.handshake.auth?.token);
     const userId = isAuthenticated.userId?.userId;
     if (isAuthenticated && userId) {
-      const { firebaseToken } = socket.handshake.auth;
+      const { firebaseToken = null } = socket.handshake.auth;
       socket["userId"] = userId;
       socket["firebaseToken"] = firebaseToken;
       return next();
