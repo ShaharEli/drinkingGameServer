@@ -14,6 +14,12 @@ const userDbSchema = new mongoose.Schema(
       unique: true,
     },
     blocked: {
+      default: [],
+      ref: "User",
+      type: [mongoose.Schema.Types.ObjectId],
+    },
+    friends: {
+      default: [],
       ref: "User",
       type: [mongoose.Schema.Types.ObjectId],
     },

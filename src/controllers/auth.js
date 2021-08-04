@@ -3,12 +3,15 @@ const Error = require("../db/schemas/error");
 const User = require("../db/schemas/user");
 const Logger = require("../logger/logger");
 const createError = require("../utils/createError.util");
+const { generateUserName } = require("../utils/formatters");
 const {
   verifyRefreshToken,
   generateAccessToken,
   generateRefreshToken,
 } = require("../utils/tokens.util");
 const { userValidationSchema } = require("../validations/user");
+const friendsFields =
+  "-email -password -isVerified -role -blocked -friends -language";
 
 const logErrorToService = async (req, res) => {
   const { info, platform, user, error } = req.body;
@@ -29,7 +32,10 @@ const logErrorToService = async (req, res) => {
 const login = async (req, res) => {
   const { password, email } = req.body;
   if (!password || !email) createError("content missing", 400);
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).populate({
+    path: "friends",
+    select: friendsFields,
+  });
   if (!user) createError("error occurred", 500);
   const isPassOk = bcrypt.compareSync(password, user.password);
   if (!isPassOk) createError("One of the fields incorrect", 500); //TODO better response
@@ -44,7 +50,12 @@ const loginWithToken = async (req, res) => {
   if (!refreshToken) createError("token missing", 400);
   const { userId } = verifyRefreshToken(refreshToken);
   if (!userId) createError("invalid token", 400);
-  const user = await User.findById(userId).lean();
+  const user = await User.findById(userId)
+    .populate({
+      path: "friends",
+      select: friendsFields,
+    })
+    .lean();
   if (!user) createError("error occurred", 500);
   delete user.password;
   const accessToken = generateAccessToken(userId, user.userName);
@@ -67,14 +78,19 @@ const editUser = async (req, res) => {
     userName,
   };
   Object.keys(payload).map((key) => {
-    if (!payload[key]) {
+    if (payload[key] === null) {
       delete payload[key];
     }
   });
   if (!Object.keys(payload).length) createError("data missing", 400);
   const user = await User.findByIdAndUpdate(req.userId, payload, {
     new: true,
-  }).lean();
+  })
+    .populate({
+      path: "friends",
+      select: friendsFields,
+    })
+    .lean();
   if (!user) createError("error occurred", 400);
   delete user.password;
   res.json({ user });
