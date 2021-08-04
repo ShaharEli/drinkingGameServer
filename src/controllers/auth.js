@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const Error = require("../db/schemas/error");
 const User = require("../db/schemas/user");
 const Logger = require("../logger/logger");
+const { friendsFields } = require("../utils/consts.util");
 const createError = require("../utils/createError.util");
 const { generateUserName } = require("../utils/formatters");
 const {
@@ -10,8 +11,6 @@ const {
   generateRefreshToken,
 } = require("../utils/tokens.util");
 const { userValidationSchema } = require("../validations/user");
-const friendsFields =
-  "-email -password -isVerified -role -blocked -friends -language";
 
 const logErrorToService = async (req, res) => {
   const { info, platform, user, error } = req.body;
